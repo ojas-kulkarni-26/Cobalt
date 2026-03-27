@@ -1,0 +1,235 @@
+/* ============================================
+   COBALT — ui.css
+   Misc UI polish, loading states
+   ============================================ */
+
+/* ── Loading Spinner ────────────────────────── */
+.spinner {
+    width: 18px;
+    height: 18px;
+    border: 2px solid var(--border-soft);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+}
+
+/* ── Inline code in editor ──────────────────── */
+.hljs {
+    background: transparent !important;
+}
+
+/* ── Sidebar toggle button (desktop collapse) ─ */
+#sidebar-toggle-fab {
+    position: fixed;
+    left: 12px;
+    top: 12px;
+    z-index: 60;
+    width: 36px;
+    height: 36px;
+    background: var(--bg-elevated);
+    border: 1px solid var(--border-soft);
+    border-radius: var(--radius-md);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    box-shadow: var(--shadow-sm);
+    transition: background var(--transition);
+    color: var(--text-tertiary);
+}
+
+#sidebar-toggle-fab:hover {
+    background: var(--bg-hover);
+    color: var(--text-primary);
+}
+
+.sidebar.collapsed~.content #sidebar-toggle-fab,
+body.sidebar-collapsed #sidebar-toggle-fab {
+    display: flex;
+}
+
+/* ── Deleted / Empty notes placeholder ─────── */
+.notes-empty-hint {
+    padding: 16px 8px;
+    font-size: 13px;
+    color: var(--text-tertiary);
+    font-family: var(--font-ui);
+    text-align: center;
+    font-style: italic;
+}
+
+/* ── Highlight.js overrides ─────────────────── */
+[data-theme="dark"] .hljs-theme-selector {
+    display: none;
+}
+
+[data-theme="light"] #hljs-theme-dark {
+    display: none;
+}
+
+[data-theme="light"] #hljs-theme-light {
+    display: block !important;
+}
+
+[data-theme="dark"] #hljs-theme-dark {
+    display: block;
+}
+
+[data-theme="dark"] #hljs-theme-light {
+    display: none !important;
+}
+
+/* ── KaTeX overrides ────────────────────────── */
+.katex-html {
+    color: var(--text-primary);
+}
+
+/* ── Table add row/col buttons ──────────────── */
+.table-actions {
+    display: flex;
+    gap: 6px;
+    margin-top: 6px;
+    flex-wrap: wrap;
+}
+
+.table-action-btn {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    padding: 4px 10px;
+    background: var(--bg-elevated);
+    border: 1px solid var(--border-soft);
+    border-radius: var(--radius-sm);
+    font-size: 12px;
+    color: var(--text-secondary);
+    font-family: var(--font-ui);
+    cursor: pointer;
+    transition: all var(--transition);
+}
+
+.table-action-btn:hover {
+    background: var(--bg-hover);
+    color: var(--text-primary);
+    border-color: var(--accent);
+}
+
+/* ── Fullscreen / focus mode ────────────────── */
+.focus-mode .sidebar {
+    transform: translateX(-100%);
+}
+
+.focus-mode .editor-inner {
+    max-width: 680px;
+}
+
+/* ── Word count badge ───────────────────────── */
+.word-count {
+    font-size: 11px;
+    color: var(--text-tertiary);
+    font-family: var(--font-ui);
+}
+
+/* ── Settings token field ───────────────────── */
+.settings-token-field {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 8px;
+}
+
+.settings-token-field input {
+    flex: 1;
+    padding: 8px 10px;
+    background: var(--bg-elevated);
+    border: 1px solid var(--border-soft);
+    border-radius: var(--radius-md);
+    font-family: var(--font-mono);
+    font-size: 12px;
+    color: var(--text-primary);
+    outline: none;
+    transition: border-color var(--transition);
+}
+
+.settings-token-field input:focus {
+    border-color: var(--accent);
+}
+
+.settings-token-field button {
+    padding: 8px 14px;
+    background: var(--accent-dim);
+    border: 1px solid var(--accent);
+    border-radius: var(--radius-md);
+    color: var(--accent-bright);
+    font-size: 13px;
+    font-family: var(--font-ui);
+    font-weight: 600;
+    cursor: pointer;
+    transition: all var(--transition);
+}
+
+.settings-token-field button:hover {
+    background: var(--accent);
+    color: #fff;
+}
+
+/* ── Scroll to top fade ─────────────────────── */
+.editor-scroll-area {
+    scroll-behavior: smooth;
+}
+
+/* ── Mobile note list swipe hint ────────────── */
+@media (max-width: 768px) {
+    .block-controls {
+        opacity: 1 !important;
+        margin-left: 0 !important;
+        position: absolute;
+        right: 0;
+        top: 0;
+    }
+
+    .block-wrap {
+        padding-right: 52px;
+    }
+}
+
+/* ── Rendered markdown in paragraphs ────────── */
+.block-paragraph p {
+    margin: 0;
+}
+
+.block-paragraph ul {
+    padding-left: 20px;
+}
+
+.block-paragraph ol {
+    padding-left: 20px;
+}
+
+/* ── Active note indicator ──────────────────── */
+.note-item.active::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 4px;
+    bottom: 4px;
+    width: 2px;
+    background: var(--accent);
+    border-radius: 1px;
+}
+
+/* ── Sync indicator dot ─────────────────────── */
+#sync-label {
+    transition: color var(--transition);
+}
+
+.sync-status.syncing #sync-label {
+    color: var(--yellow);
+}
+
+.sync-status.error #sync-label {
+    color: var(--red);
+}
+
+.sync-status.ok #sync-label {
+    color: var(--text-tertiary);
+}
