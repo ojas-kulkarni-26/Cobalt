@@ -13,28 +13,43 @@
   "categories": ["productivity", "utilities"],
   "icons": [
     {
-      "src": "/Cobalt/assets/icon-192.svg",
+      "src": "/Cobalt/assets/icon-192.png",
       "sizes": "192x192",
-      "type": "image/svg+xml",
+      "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "/Cobalt/assets/icon-192.svg",
+      "src": "/Cobalt/assets/icon-192.png",
       "sizes": "192x192",
-      "type": "image/svg+xml",
+      "type": "image/png",
       "purpose": "maskable"
     },
     {
-      "src": "/Cobalt/assets/icon-512.svg",
+      "src": "/Cobalt/assets/icon-512.png",
       "sizes": "512x512",
-      "type": "image/svg+xml",
+      "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "/Cobalt/assets/icon-512.svg",
+      "src": "/Cobalt/assets/icon-512.png",
       "sizes": "512x512",
-      "type": "image/svg+xml",
+      "type": "image/png",
       "purpose": "maskable"
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "/Cobalt/assets/screenshot-desktop.png",
+      "sizes": "1280x720",
+      "type": "image/png",
+      "form_factor": "wide",
+      "label": "Cobalt workspace desktop view"
+    },
+    {
+      "src": "/Cobalt/assets/screenshot-mobile.png",
+      "sizes": "540x720",
+      "type": "image/png",
+      "label": "Cobalt workspace mobile view"
     }
   ]
 }

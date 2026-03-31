@@ -16,8 +16,8 @@ const PRECACHE_URLS = [
   BASE + '/js/store.js',
   BASE + '/js/ui.js',
   BASE + '/js/utils.js',
-  BASE + '/assets/icon-192.svg',
-  BASE + '/assets/icon-512.svg',
+  BASE + '/assets/icon-192.png',
+  BASE + '/assets/icon-512.png',
 ];
 
 const CDN_CACHE_NAME = 'cobalt-cdn-v1';

@@ -190,6 +190,10 @@
     cursor: grab;
     border-radius: var(--radius-sm);
     transition: background var(--transition), color var(--transition);
+    touch-action: none;
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    user-select: none;
 }
 
 .block-drag-handle:hover {

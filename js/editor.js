@@ -47,6 +47,9 @@ const blockCallbacks = {
   onDragLeave(e)            { handleDragLeave(e); },
   onDrop(e, blockId)        { handleDrop(e, blockId); },
   onDragEnd(e)              { handleDragEnd(e); },
+  onTouchStart(e, blockId)  { handleTouchStart(e, blockId); },
+  onTouchMove(e)            { handleTouchMove(e); },
+  onTouchEnd(e)             { handleTouchEnd(e); },
   onContextMenu(e, blockId) { showBlockCtxMenu(e, blockId); },
   onSlashCommand(blockId, el) { showBlockTypeMenu(type => changeBlockType(blockId, type), el); },
   onSlashClose() { hideBlockTypeMenu(); },
@@ -62,6 +65,14 @@ export function renderBlocks(noteId, blocks) {
   if (!c) return;
   c.innerHTML = '';
   blocks.forEach(block => c.appendChild(buildBlockDOM(block, blockCallbacks)));
+
+  // Container-level touch listeners for reliable move/end tracking
+  if (!c._touchDragBound) {
+    c.addEventListener('touchmove', e => handleTouchMove(e), { passive: false });
+    c.addEventListener('touchend', e => handleTouchEnd(e));
+    c.addEventListener('touchcancel', e => handleTouchEnd(e));
+    c._touchDragBound = true;
+  }
 }
 
 // ── Insert block ──────────────────────────────
@@ -298,6 +309,66 @@ function handleDragEnd() {
   container()?.querySelectorAll('.dragging,.drag-over-top,.drag-over-bottom').forEach(x =>
     x.classList.remove('dragging', 'drag-over-top', 'drag-over-bottom')
   );
+}
+
+// ── Touch drag and drop (mobile) ───────────────
+let _touchSrcId = null;
+
+function handleTouchStart(e, blockId) {
+  if (e.touches.length !== 1) return;
+  const handle = e.currentTarget.querySelector('.block-drag-handle');
+  if (!handle || !handle.contains(e.target)) return;
+  e.preventDefault();
+  _touchSrcId = blockId;
+  e.currentTarget.classList.add('dragging');
+}
+
+function handleTouchMove(e) {
+  if (!_touchSrcId) return;
+  e.preventDefault();
+  const touch = e.touches[0];
+  const c = container();
+  c.querySelectorAll('.drag-over-top,.drag-over-bottom').forEach(x =>
+    x.classList.remove('drag-over-top', 'drag-over-bottom')
+  );
+  const el = document.elementFromPoint(touch.clientX, touch.clientY);
+  const wrap = el?.closest('.block-wrap');
+  if (wrap && wrap.dataset.blockId !== _touchSrcId) {
+    const mid = wrap.getBoundingClientRect().top + wrap.getBoundingClientRect().height / 2;
+    wrap.classList.add(touch.clientY < mid ? 'drag-over-top' : 'drag-over-bottom');
+  }
+}
+
+function handleTouchEnd(e) {
+  if (!_touchSrcId) return;
+  const c = container();
+  const srcId = _touchSrcId;
+  _touchSrcId = null;
+
+  const overEl = c.querySelector('.drag-over-top, .drag-over-bottom');
+  const srcWrap = c.querySelector(`.block-wrap[data-block-id="${srcId}"]`);
+  c.querySelectorAll('.dragging,.drag-over-top,.drag-over-bottom').forEach(x =>
+    x.classList.remove('dragging', 'drag-over-top', 'drag-over-bottom')
+  );
+
+  if (overEl && srcWrap) {
+    const isTop = overEl.classList.contains('drag-over-top');
+    overEl.classList.remove('drag-over-top', 'drag-over-bottom');
+    isTop
+      ? overEl.insertAdjacentElement('beforebegin', srcWrap)
+      : overEl.insertAdjacentElement('afterend', srcWrap);
+
+    const newOrder = Array.from(c.querySelectorAll('.block-wrap')).map((el, i) => ({
+      id: el.dataset.blockId, position: i + 1,
+    }));
+    const blocks = getState().activeBlocks;
+    const updated = newOrder.map(({ id, position }) => {
+      const b = blocks.find(x => x.id === id);
+      return b ? { ...b, position } : null;
+    }).filter(Boolean);
+    setState({ activeBlocks: updated });
+    scheduleSave();
+  }
 }
 
 // ── Focus helpers ─────────────────────────────

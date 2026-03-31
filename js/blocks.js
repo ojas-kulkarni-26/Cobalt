@@ -75,6 +75,9 @@ export function buildBlockDOM(block, callbacks) {
   wrap.addEventListener('dragleave', e => callbacks.onDragLeave(e));
   wrap.addEventListener('drop',      e => callbacks.onDrop(e, block.id));
   wrap.addEventListener('dragend',   e => callbacks.onDragEnd(e));
+  wrap.addEventListener('touchstart', e => callbacks.onTouchStart(e, block.id), { passive: false });
+  wrap.addEventListener('touchmove', e => callbacks.onTouchMove(e), { passive: false });
+  wrap.addEventListener('touchend',  e => callbacks.onTouchEnd(e));
   wrap.addEventListener('contextmenu', e => { e.preventDefault(); callbacks.onContextMenu(e, block.id); });
 
   return wrap;
