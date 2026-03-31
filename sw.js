@@ -1,22 +1,23 @@
 const CACHE_NAME = 'cobalt-v1';
+const BASE = '/Cobalt';
 
 const PRECACHE_URLS = [
-  '/',
-  '/index.html',
-  '/css/base.css',
-  '/css/layout.css',
-  '/css/editor.css',
-  '/css/ui.css',
-  '/js/app.js',
-  '/js/blocks.js',
-  '/js/db.js',
-  '/js/editor.js',
-  '/js/render.js',
-  '/js/store.js',
-  '/js/ui.js',
-  '/js/utils.js',
-  '/assets/icon-192.svg',
-  '/assets/icon-512.svg',
+  BASE + '/',
+  BASE + '/index.html',
+  BASE + '/css/base.css',
+  BASE + '/css/layout.css',
+  BASE + '/css/editor.css',
+  BASE + '/css/ui.css',
+  BASE + '/js/app.js',
+  BASE + '/js/blocks.js',
+  BASE + '/js/db.js',
+  BASE + '/js/editor.js',
+  BASE + '/js/render.js',
+  BASE + '/js/store.js',
+  BASE + '/js/ui.js',
+  BASE + '/js/utils.js',
+  BASE + '/assets/icon-192.svg',
+  BASE + '/assets/icon-512.svg',
 ];
 
 const CDN_CACHE_NAME = 'cobalt-cdn-v1';
@@ -68,7 +69,7 @@ self.addEventListener('fetch', event => {
   // Navigation requests: network-first
   if (request.mode === 'navigate') {
     event.respondWith(
-      fetch(request).catch(() => caches.match('/index.html'))
+      fetch(request).catch(() => caches.match(BASE + '/index.html'))
     );
     return;
   }

@@ -293,7 +293,7 @@ function esc(s) {
 
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('/sw.js').catch(() => {});
+    navigator.serviceWorker.register('/Cobalt/sw.js').catch(() => {});
   });
 }
 
