@@ -114,7 +114,7 @@ const MD_PATTERNS = [
   [/~~([^~\n<]+?)~~/g,        '<s>$1</s>'],
 ];
 
-const TRIGGER_CHARS = new Set(['*', '`', '=', '~', ' ']);
+const TRIGGER_CHARS = new Set(['*', '`', '=', '~', ' ', '$', '\\']);
 
 function applyInlineMarkdown(el) {
   const sel = window.getSelection();
@@ -164,6 +164,66 @@ function findTextNode(root, offset) {
     return null;
   }
   return walk(root) || { node: root, offset: 0 };
+}
+
+// ── Inline LaTeX Rendering ──────────────────────
+const LATEX_DELIMITERS = [
+  { start: '$$', end: '$$', display: true },
+  { start: '$', end: '$', display: false },
+  { start: '\\(', end: '\\)', display: false },
+  { start: '\\[', end: '\\]', display: true },
+];
+
+function applyInlineLatex(el) {
+  if (!window.katex) return false;
+  
+  const sel = window.getSelection();
+  if (!sel?.rangeCount) return false;
+
+  const range = sel.getRangeAt(0);
+  const afterRange = document.createRange();
+  afterRange.selectNodeContents(el);
+  try { afterRange.setStart(range.endContainer, range.endOffset); }
+  catch { return false; }
+  const charsFromEnd = afterRange.toString().length;
+
+  let html = el.innerHTML;
+  let changed = false;
+
+  for (const { start, end, display } of LATEX_DELIMITERS) {
+    const escapedStart = start.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const escapedEnd = end.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const re = new RegExp(`${escapedStart}([^${escapedStart === escapedEnd ? start : ''}\\n]+?)${escapedEnd}`, 'g');
+    
+    html = html.replace(re, (match, latex) => {
+      try {
+        changed = true;
+        return katex.renderToString(latex.trim(), { 
+          displayMode: display,
+          throwOnError: false 
+        });
+      } catch (e) {
+        return match;
+      }
+    });
+  }
+
+  if (!changed) return false;
+
+  el.innerHTML = html;
+
+  const totalLen = el.textContent.length;
+  const target = Math.max(0, totalLen - charsFromEnd);
+  const pos = findTextNode(el, target);
+  if (!pos) return true;
+  try {
+    const r = document.createRange();
+    r.setStart(pos.node, pos.offset);
+    r.collapse(true);
+    sel.removeAllRanges();
+    sel.addRange(r);
+  } catch {}
+  return true;
 }
 
 // ── Paragraph ─────────────────────────────────
@@ -607,6 +667,11 @@ function setupTextCallbacks(el, id, callbacks) {
       callbacks.onBlockChange(id, { text: el.innerHTML });
     }, 400);
 
+    // Process inline latex on input
+    if (applyInlineLatex(el)) {
+      callbacks.onBlockChange(id, { text: el.innerHTML });
+    }
+
     // Slash command detection on empty element
     if (el.textContent === '/') {
       callbacks.onSlashCommand?.(id, el);
@@ -623,8 +688,8 @@ function setupTextCallbacks(el, id, callbacks) {
 
 function setupInlineMarkdown(el, id, callbacks, onApply) {
   el.addEventListener('keyup', e => {
-    if (TRIGGER_CHARS.has(e.key) || e.key === 'Enter') {
-      if (applyInlineMarkdown(el)) {
+    if (TRIGGER_CHARS.has(e.key) || e.key === 'Enter' || e.key === '$' || e.key === '\\') {
+      if (applyInlineMarkdown(el) || applyInlineLatex(el)) {
         onApply?.();
       }
     }

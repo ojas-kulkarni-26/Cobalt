@@ -65,6 +65,14 @@ export function parseMarkdown(mdText) {
     if (!block) continue;
     
     if (block.type === 'bullet' || block.type === 'numbered') {
+      // Filter out empty list items
+      const text = block.content.text?.trim() || '';
+      if (!text) continue;
+      
+      // Strip leading list markers from text
+      const cleanedText = cleanListItemText(text, block.type);
+      block.content.text = cleanedText;
+      
       if (listAccumulator && listType === block.type) {
         listAccumulator.items.push(block.content);
       } else {
@@ -79,19 +87,46 @@ export function parseMarkdown(mdText) {
       }
     } else {
       if (listAccumulator) {
-        blocks.push(listAccumulator);
+        // Filter out empty list items before pushing
+        const filteredItems = listAccumulator.items.filter(item => 
+          (item.text?.trim() || '').length > 0
+        );
+        if (filteredItems.length > 0) {
+          blocks.push({ ...listAccumulator, items: filteredItems });
+        }
         listAccumulator = null;
         listType = null;
       }
+      
+      // Filter out empty blocks (paragraphs with empty/whitespace text)
+      if (block.type === 'paragraph') {
+        const text = block.content.text?.trim() || '';
+        if (!text) continue;
+      }
+      
       blocks.push(block);
     }
   }
   
   if (listAccumulator) {
-    blocks.push(listAccumulator);
+    const filteredItems = listAccumulator.items.filter(item => 
+      (item.text?.trim() || '').length > 0
+    );
+    if (filteredItems.length > 0) {
+      blocks.push({ ...listAccumulator, items: filteredItems });
+    }
   }
   
   return blocks.length > 0 ? blocks : [{ type: 'paragraph', content: { text: '' } }];
+}
+
+function cleanListItemText(text, type) {
+  if (type === 'bullet') {
+    return text.replace(/^[-*+]\s*/, '');
+  } else if (type === 'numbered') {
+    return text.replace(/^\d+\.?\s*/, '');
+  }
+  return text;
 }
 
 function tokenToBlock(token) {
@@ -160,11 +195,20 @@ export function parseHtml(htmlString) {
     if (!block) continue;
     
     if (block.type === 'bullet' || block.type === 'numbered') {
+      // Filter out empty list items
+      const text = block.content.text?.trim() || '';
+      if (!text) continue;
+      
       if (listAccumulator && listType === block.type) {
         listAccumulator.items.push(block.content);
       } else {
         if (listAccumulator) {
-          blocks.push(listAccumulator);
+          const filteredItems = listAccumulator.items.filter(item => 
+            (item.text?.trim() || '').length > 0
+          );
+          if (filteredItems.length > 0) {
+            blocks.push({ ...listAccumulator, items: filteredItems });
+          }
         }
         listType = block.type;
         listAccumulator = {
@@ -174,16 +218,33 @@ export function parseHtml(htmlString) {
       }
     } else {
       if (listAccumulator) {
-        blocks.push(listAccumulator);
+        const filteredItems = listAccumulator.items.filter(item => 
+          (item.text?.trim() || '').length > 0
+        );
+        if (filteredItems.length > 0) {
+          blocks.push({ ...listAccumulator, items: filteredItems });
+        }
         listAccumulator = null;
         listType = null;
       }
+      
+      // Filter out empty blocks
+      if (block.type === 'paragraph') {
+        const text = block.content.text?.trim() || '';
+        if (!text) continue;
+      }
+      
       blocks.push(block);
     }
   }
   
   if (listAccumulator) {
-    blocks.push(listAccumulator);
+    const filteredItems = listAccumulator.items.filter(item => 
+      (item.text?.trim() || '').length > 0
+    );
+    if (filteredItems.length > 0) {
+      blocks.push({ ...listAccumulator, items: filteredItems });
+    }
   }
   
   return blocks.length > 0 ? blocks : [{ type: 'paragraph', content: { text: '' } }];

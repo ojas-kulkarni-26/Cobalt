@@ -572,6 +572,26 @@
     font-size: 1.15em;
 }
 
+/* ── Inline LaTeX ─────────────────────────────── */
+.block-paragraph .katex,
+.block-bullet-text .katex,
+.block-numbered-text .katex,
+.block-quote-text .katex,
+.block-h1 .katex,
+.block-h2 .katex,
+.block-h3 .katex,
+.block-callout-text .katex {
+    font-size: 0.95em;
+}
+
+.block-paragraph .katex-display,
+.block-bullet-text .katex-display,
+.block-numbered-text .katex-display,
+.block-quote-text .katex-display {
+    display: inline-block;
+    margin: 4px 0;
+}
+
 .block-math-error {
     color: var(--red);
     font-size: 12px;

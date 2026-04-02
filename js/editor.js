@@ -468,7 +468,16 @@ async function handlePaste(e) {
   
   for (const pb of parsedBlocks) {
     const type = pb.type;
-    if (type === 'bullet') {
+    
+    if (type === 'bullet' && pb.items) {
+      for (const item of pb.items) {
+        lastInsertedId = (await insertBlock('bullet', lastInsertedId, { text: item.text })).id;
+      }
+    } else if (type === 'numbered' && pb.items) {
+      for (const item of pb.items) {
+        lastInsertedId = (await insertBlock('numbered', lastInsertedId, { text: item.text, number: item.number })).id;
+      }
+    } else if (type === 'bullet') {
       lastInsertedId = (await insertBlock('bullet', lastInsertedId, { text: pb.content.text })).id;
     } else if (type === 'numbered') {
       lastInsertedId = (await insertBlock('numbered', lastInsertedId, { text: pb.content.text, number: pb.content.number })).id;
