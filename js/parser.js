@@ -72,21 +72,30 @@ export function parseMarkdown(mdText) {
   const blocks = [];
   const tokens = window.marked.lexer(processedText);
   
+  // First pass: convert all tokens to blocks, flattening arrays
+  const allBlocks = [];
+  for (const token of tokens) {
+    const result = tokenToBlock(token);
+    if (!result) continue;
+    if (Array.isArray(result)) {
+      allBlocks.push(...result);
+    } else {
+      allBlocks.push(result);
+    }
+  }
+  
+  console.log('All blocks from tokens:', allBlocks);
+  
+  // Second pass: accumulate consecutive same-type list items
   let listAccumulator = null;
   let listType = null;
   
-  for (const token of tokens) {
-    const block = tokenToBlock(token);
-    if (!block) continue;
-    
+  for (const block of allBlocks) {
     if (block.type === 'bullet' || block.type === 'numbered') {
-      // Filter out empty list items
       const text = block.content.text?.trim() || '';
       if (!text) continue;
       
-      // Strip leading list markers from text
-      const cleanedText = cleanListItemText(text, block.type);
-      block.content.text = cleanedText;
+      block.content.text = cleanListItemText(text, block.type);
       
       if (listAccumulator && listType === block.type) {
         listAccumulator.items.push(block.content);
@@ -95,43 +104,28 @@ export function parseMarkdown(mdText) {
           blocks.push(listAccumulator);
         }
         listType = block.type;
-        listAccumulator = {
-          type: block.type,
-          items: [block.content]
-        };
+        listAccumulator = { type: block.type, items: [block.content] };
       }
     } else {
       if (listAccumulator) {
-        // Filter out empty list items before pushing
-        const filteredItems = listAccumulator.items.filter(item => 
-          (item.text?.trim() || '').length > 0
-        );
-        if (filteredItems.length > 0) {
-          blocks.push({ ...listAccumulator, items: filteredItems });
-        }
+        const filtered = listAccumulator.items.filter(i => (i.text?.trim() || '').length > 0);
+        if (filtered.length > 0) blocks.push({ ...listAccumulator, items: filtered });
         listAccumulator = null;
         listType = null;
       }
-      
-      // Filter out empty blocks (paragraphs with empty/whitespace text)
       if (block.type === 'paragraph') {
-        const text = block.content.text?.trim() || '';
-        if (!text) continue;
+        if (!(block.content.text?.trim())) continue;
       }
-      
       blocks.push(block);
     }
   }
   
   if (listAccumulator) {
-    const filteredItems = listAccumulator.items.filter(item => 
-      (item.text?.trim() || '').length > 0
-    );
-    if (filteredItems.length > 0) {
-      blocks.push({ ...listAccumulator, items: filteredItems });
-    }
+    const filtered = listAccumulator.items.filter(i => (i.text?.trim() || '').length > 0);
+    if (filtered.length > 0) blocks.push({ ...listAccumulator, items: filtered });
   }
   
+  console.log('Final blocks:', blocks);
   return blocks.length > 0 ? blocks : [{ type: 'paragraph', content: { text: '' } }];
 }
 
