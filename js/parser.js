@@ -38,12 +38,14 @@ export function parsePastedContent(text, html = '') {
 function containsMarkdown(text) {
   const mdPatterns = [
     /^#{1,6}\s/m,
-    /^[-*+]\s/m,
+    /^[-*\u2022\u2023\u25E6\u2043\u2219]\s/m,
     /^\d+\.\s/m,
     /^>\s/m,
     /^```[\s\S]*?```/m,
     /^\|.+\|/m,
     /^[-*_]{3,}$/m,
+    /\$\$[\s\S]*?\$\$/m,
+    /\\\[[\s\S]*?\\\]/m,
   ];
   try {
     return mdPatterns.some(p => p.test(text));
@@ -125,7 +127,7 @@ export function parseMarkdown(mdText) {
 
 function cleanListItemText(text, type) {
   if (type === 'bullet') {
-    return text.replace(/^[-*+]\s*/, '');
+    return text.replace(/^[-*\u2022\u2023\u25E6\u2043\u2219+]\s*/, '');
   } else if (type === 'numbered') {
     return text.replace(/^\d+\.?\s*/, '');
   }

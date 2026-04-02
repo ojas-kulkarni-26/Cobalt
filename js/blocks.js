@@ -194,8 +194,7 @@ function applyInlineLatex(el) {
     try {
       const escapedStart = start.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
       const escapedEnd = end.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-      const innerChars = escapedStart === escapedEnd ? escapedStart + '\\n' : '\\\\n';
-      const re = new RegExp(`${escapedStart}([^${innerChars}]+?)${escapedEnd}`, 'g');
+      const re = new RegExp(`${escapedStart}([\\s\\S]*?)${escapedEnd}`, 'g');
       
       html = html.replace(re, (match, latex) => {
         try {
@@ -210,6 +209,26 @@ function applyInlineLatex(el) {
       });
     } catch (e) {
       // Skip this delimiter if regex fails
+    }
+  }
+
+  if (!changed) return false;
+
+  el.innerHTML = html;
+
+  const totalLen = el.textContent.length;
+  const target = Math.max(0, totalLen - charsFromEnd);
+  const pos = findTextNode(el, target);
+  if (!pos) return true;
+  try {
+    const r = document.createRange();
+    r.setStart(pos.node, pos.offset);
+    r.collapse(true);
+    sel.removeAllRanges();
+    sel.addRange(r);
+  } catch {}
+  return true;
+}
     }
   }
 
