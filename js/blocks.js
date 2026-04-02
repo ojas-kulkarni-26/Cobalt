@@ -229,26 +229,6 @@ function applyInlineLatex(el) {
   } catch {}
   return true;
 }
-    }
-  }
-
-  if (!changed) return false;
-
-  el.innerHTML = html;
-
-  const totalLen = el.textContent.length;
-  const target = Math.max(0, totalLen - charsFromEnd);
-  const pos = findTextNode(el, target);
-  if (!pos) return true;
-  try {
-    const r = document.createRange();
-    r.setStart(pos.node, pos.offset);
-    r.collapse(true);
-    sel.removeAllRanges();
-    sel.addRange(r);
-  } catch {}
-  return true;
-}
 
 // ── Paragraph ─────────────────────────────────
 function buildParagraph(id, content, callbacks) {
