@@ -492,10 +492,48 @@ async function handlePaste(e) {
   
   const lastWrap = c.querySelector(`.block-wrap[data-block-id="${lastInsertedId}"]`);
   if (lastWrap) {
+    // Trigger inline latex rendering on the inserted content
+    const editable = lastWrap.querySelector('[contenteditable]');
+    if (editable && window.katex) {
+      applyInlineLatexOnElement(editable);
+    }
     setTimeout(() => focusBlock(lastWrap, true), 50);
   }
   
   scheduleSave();
+}
+
+function applyInlineLatexOnElement(el) {
+  if (!window.katex) return;
+  
+  let html = el.innerHTML;
+  const LATEX_DELIMITERS = [
+    { start: '$$', end: '$$', display: true },
+    { start: '$', end: '$', display: false },
+    { start: '\\(', end: '\\)', display: false },
+    { start: '\\[', end: '\\]', display: true },
+  ];
+  
+  for (const { start, end, display } of LATEX_DELIMITERS) {
+    try {
+      const escapedStart = start.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const escapedEnd = end.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const re = new RegExp(`${escapedStart}([\\s\\S]*?)${escapedEnd}`, 'g');
+      
+      html = html.replace(re, (match, latex) => {
+        try {
+          return katex.renderToString(latex.trim(), { 
+            displayMode: display,
+            throwOnError: false 
+          });
+        } catch (e) {
+          return match;
+        }
+      });
+    } catch (e) {}
+  }
+  
+  el.innerHTML = html;
 }
 
 // ── Block context menu ────────────────────────

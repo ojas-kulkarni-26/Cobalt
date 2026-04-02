@@ -28,10 +28,12 @@ export function parsePastedContent(text, html = '') {
   
   console.log('Parser Debug:', { hasMarkdown, hasHtmlStructure, textPreview: text.substring(0, 50) });
   
+  // Prefer markdown detection over HTML if markdown detected
   if (hasMarkdown) {
     return parseMarkdown(text);
   } else if (hasHtmlStructure) {
-    return parseHtml(html);
+    // Even with HTML, try to parse as markdown first if text looks like markdown
+    return parseMarkdown(text);
   } else {
     return [{ type: 'paragraph', content: { text: escapeHtml(text) } }];
   }
@@ -48,6 +50,7 @@ function containsMarkdown(text) {
     /^[-*_]{3,}$/m,
     /\$\$[\s\S]*?\$\$/m,
     /\\\[[\s\S]*?\\\]/m,
+    /\\\\\[/m,
   ];
   try {
     return mdPatterns.some(p => p.test(text));
@@ -57,12 +60,17 @@ function containsMarkdown(text) {
 }
 
 export function parseMarkdown(mdText) {
+  // Pre-process display math blocks \[...\]
+  let processedText = mdText.replace(/\\\[([\s\S]*?)\\\]/g, (match, latex) => {
+    return `$$${latex.trim()}$$`;
+  });
+  
   if (!window.marked) {
     return [{ type: 'paragraph', content: { text: escapeHtml(mdText) } }];
   }
 
   const blocks = [];
-  const tokens = window.marked.lexer(mdText);
+  const tokens = window.marked.lexer(processedText);
   
   let listAccumulator = null;
   let listType = null;
