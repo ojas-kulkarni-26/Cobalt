@@ -406,12 +406,16 @@ async function handlePaste(e) {
   const text = e.clipboardData?.getData('text/plain') || '';
   const html = e.clipboardData?.getData('text/html') || '';
   
+  console.log('Smart Paste Debug:', { text: text.substring(0, 100), hasHtml: !!html });
+  
   if (!text.trim()) return;
   
   e.preventDefault();
   e.stopPropagation();
   
   const parsedBlocks = parsePastedContent(text, html);
+  
+  console.log('Parsed blocks:', parsedBlocks);
   
   if (parsedBlocks.length === 0) return;
   

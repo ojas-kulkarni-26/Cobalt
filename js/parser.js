@@ -26,6 +26,8 @@ export function parsePastedContent(text, html = '') {
   const hasMarkdown = containsMarkdown(text);
   const hasHtmlStructure = html && html.trim().length > 0;
   
+  console.log('Parser Debug:', { hasMarkdown, hasHtmlStructure, textPreview: text.substring(0, 50) });
+  
   if (hasMarkdown) {
     return parseMarkdown(text);
   } else if (hasHtmlStructure) {
