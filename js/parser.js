@@ -37,16 +37,19 @@ export function parsePastedContent(text, html = '') {
 
 function containsMarkdown(text) {
   const mdPatterns = [
-    /^#{1,6}\s/m,           // Headings
-    /^[-*+]\s/m,            // Bullet lists
-    /^\d+\.\s/m,            // Numbered lists
-    /^>\s/m,                // Blockquotes
-    /^```[\s\S]*?```/m,     // Code blocks
-    /^\|.+\|/m,             // Tables
-    /^[-*_]{3,}$/m,        // Horizontal rules
-    /\$\$[\s\S]*?\$\$/m,    // Math blocks
+    /^#{1,6}\s/m,
+    /^[-*+]\s/m,
+    /^\d+\.\s/m,
+    /^>\s/m,
+    /^```[\s\S]*?```/m,
+    /^\|.+\|/m,
+    /^[-*_]{3,}$/m,
   ];
-  return mdPatterns.some(p => p.test(text));
+  try {
+    return mdPatterns.some(p => p.test(text));
+  } catch (e) {
+    return false;
+  }
 }
 
 export function parseMarkdown(mdText) {

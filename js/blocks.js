@@ -191,21 +191,26 @@ function applyInlineLatex(el) {
   let changed = false;
 
   for (const { start, end, display } of LATEX_DELIMITERS) {
-    const escapedStart = start.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-    const escapedEnd = end.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-    const re = new RegExp(`${escapedStart}([^${escapedStart === escapedEnd ? start : ''}\\n]+?)${escapedEnd}`, 'g');
-    
-    html = html.replace(re, (match, latex) => {
-      try {
-        changed = true;
-        return katex.renderToString(latex.trim(), { 
-          displayMode: display,
-          throwOnError: false 
-        });
-      } catch (e) {
-        return match;
-      }
-    });
+    try {
+      const escapedStart = start.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const escapedEnd = end.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const innerChars = escapedStart === escapedEnd ? escapedStart + '\\n' : '\\\\n';
+      const re = new RegExp(`${escapedStart}([^${innerChars}]+?)${escapedEnd}`, 'g');
+      
+      html = html.replace(re, (match, latex) => {
+        try {
+          changed = true;
+          return katex.renderToString(latex.trim(), { 
+            displayMode: display,
+            throwOnError: false 
+          });
+        } catch (e) {
+          return match;
+        }
+      });
+    } catch (e) {
+      // Skip this delimiter if regex fails
+    }
   }
 
   if (!changed) return false;

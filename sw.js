@@ -1,4 +1,4 @@
-const CACHE_NAME = 'cobalt-v1';
+const CACHE_NAME = 'cobalt-v3';
 const BASE = '/Cobalt';
 
 const PRECACHE_URLS = [
@@ -12,6 +12,7 @@ const PRECACHE_URLS = [
   BASE + '/js/blocks.js',
   BASE + '/js/db.js',
   BASE + '/js/editor.js',
+  BASE + '/js/parser.js',
   BASE + '/js/render.js',
   BASE + '/js/store.js',
   BASE + '/js/ui.js',
