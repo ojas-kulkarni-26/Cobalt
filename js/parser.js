@@ -43,8 +43,8 @@ function containsMarkdown(text) {
     /^>\s/m,                // Blockquotes
     /^```[\s\S]*?```/m,     // Code blocks
     /^\|.+\|/m,             // Tables
-    /^---$/m, /^***$/m,     // Horizontal rules
-    /\$\$.*\$\$/s,          // Math blocks
+    /^[-*_]{3,}$/m,        // Horizontal rules
+    /\$\$[\s\S]*?\$\$/m,    // Math blocks
   ];
   return mdPatterns.some(p => p.test(text));
 }
