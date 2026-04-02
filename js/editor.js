@@ -5,6 +5,7 @@
 
 import { getState, setState, upsertBlock, removeBlock } from './store.js';
 import { buildBlockDOM, createBlockData, BLOCK_TYPES } from './blocks.js';
+import { parsePastedContent } from './parser.js';
 import * as db from './db.js';
 import { generateId } from './utils.js';
 import { showBlockTypeMenu, hideBlockTypeMenu, setSyncStatus, showContextMenu } from './ui.js';
@@ -72,6 +73,12 @@ export function renderBlocks(noteId, blocks) {
     c.addEventListener('touchend', e => handleTouchEnd(e));
     c.addEventListener('touchcancel', e => handleTouchEnd(e));
     c._touchDragBound = true;
+  }
+
+  // Container-level paste handler for smart block insertion
+  if (!c._pasteHandlerBound) {
+    c.addEventListener('paste', handlePaste);
+    c._pasteHandlerBound = true;
   }
 }
 
@@ -385,6 +392,97 @@ function focusBlock(wrap, toEnd = false) {
     sel.removeAllRanges();
     sel.addRange(range);
   } catch {}
+}
+
+// ── Smart Paste Handler ───────────────────────
+async function handlePaste(e) {
+  const activeEl = document.activeElement;
+  if (!activeEl || !activeEl.closest('.block-wrap')) return;
+  
+  const blockWrap = activeEl.closest('.block-wrap');
+  const blockId = blockWrap?.dataset.blockId;
+  const block = blockId ? getState().activeBlocks.find(b => b.id === blockId) : null;
+  
+  const text = e.clipboardData?.getData('text/plain') || '';
+  const html = e.clipboardData?.getData('text/html') || '';
+  
+  if (!text.trim()) return;
+  
+  e.preventDefault();
+  e.stopPropagation();
+  
+  const parsedBlocks = parsePastedContent(text, html);
+  
+  if (parsedBlocks.length === 0) return;
+  
+  if (parsedBlocks.length === 1 && parsedBlocks[0].type === 'paragraph') {
+    document.execCommand('insertText', false, text);
+    return;
+  }
+  
+  const c = container();
+  const activeBlockId = blockId;
+  let insertAfterId = activeBlockId;
+  
+  if (activeBlockId && activeEl.textContent.trim() === '') {
+    const firstBlock = parsedBlocks[0];
+    await changeBlockType(activeBlockId, firstBlock.type);
+    const updatedBlock = getState().activeBlocks.find(b => b.id === activeBlockId);
+    if (updatedBlock) {
+      const defContent = BLOCK_TYPES.find(t => t.type === firstBlock.type)?.defaultContent || {};
+      const newContent = { ...defContent, ...firstBlock.content };
+      upsertBlock({ ...updatedBlock, content: newContent });
+      
+      const newWrap = c.querySelector(`.block-wrap[data-block-id="${activeBlockId}"]`);
+      if (newWrap) {
+        const editable = newWrap.querySelector('[contenteditable], textarea');
+        if (editable) {
+          if (editable.tagName === 'TEXTAREA') {
+            editable.value = newContent.code || newContent.latex || '';
+          } else {
+            editable.innerHTML = newContent.text || newContent.title || '';
+          }
+        }
+      }
+      scheduleSave();
+    }
+    insertAfterId = activeBlockId;
+    parsedBlocks.shift();
+  } else if (activeBlockId) {
+    const newBlock = await insertBlock('paragraph', activeBlockId);
+    insertAfterId = newBlock.id;
+  }
+  
+  if (parsedBlocks.length === 0) return;
+  
+  let lastInsertedId = insertAfterId;
+  
+  if (!lastInsertedId) {
+    const blocks = getState().activeBlocks;
+    if (blocks.length > 0) {
+      lastInsertedId = blocks[blocks.length - 1].id;
+    } else {
+      lastInsertedId = (await insertBlock('paragraph', null)).id;
+    }
+  }
+  
+  for (const pb of parsedBlocks) {
+    const type = pb.type;
+    if (type === 'bullet') {
+      lastInsertedId = (await insertBlock('bullet', lastInsertedId, { text: pb.content.text })).id;
+    } else if (type === 'numbered') {
+      lastInsertedId = (await insertBlock('numbered', lastInsertedId, { text: pb.content.text, number: pb.content.number })).id;
+    } else {
+      lastInsertedId = (await insertBlock(type, lastInsertedId, pb.content)).id;
+    }
+  }
+  
+  const lastWrap = c.querySelector(`.block-wrap[data-block-id="${lastInsertedId}"]`);
+  if (lastWrap) {
+    setTimeout(() => focusBlock(lastWrap, true), 50);
+  }
+  
+  scheduleSave();
 }
 
 // ── Block context menu ────────────────────────
