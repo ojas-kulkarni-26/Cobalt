@@ -1,4 +1,4 @@
-const CACHE_NAME = 'cobalt-v5';
+const CACHE_NAME = 'cobalt-v6';
 const BASE = '/Cobalt';
 
 const PRECACHE_URLS = [

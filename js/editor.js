@@ -421,6 +421,16 @@ async function handlePaste(e) {
   
   if (parsedBlocks.length === 1 && parsedBlocks[0].type === 'paragraph') {
     document.execCommand('insertText', false, text);
+    
+    // Trigger inline markdown and latex rendering after paste
+    const activeEl2 = document.activeElement;
+    if (activeEl2?.closest('.block-wrap')) {
+      const editable = activeEl2.closest('.block-wrap').querySelector('[contenteditable]');
+      if (editable) {
+        if (window.katex) applyInlineLatexOnElement(editable);
+        applyInlineMarkdownOnElement(editable);
+      }
+    }
     return;
   }
   
@@ -492,10 +502,11 @@ async function handlePaste(e) {
   
   const lastWrap = c.querySelector(`.block-wrap[data-block-id="${lastInsertedId}"]`);
   if (lastWrap) {
-    // Trigger inline latex rendering on the inserted content
+    // Trigger inline latex and markdown rendering on the inserted content
     const editable = lastWrap.querySelector('[contenteditable]');
-    if (editable && window.katex) {
-      applyInlineLatexOnElement(editable);
+    if (editable) {
+      if (window.katex) applyInlineLatexOnElement(editable);
+      applyInlineMarkdownOnElement(editable);
     }
     setTimeout(() => focusBlock(lastWrap, true), 50);
   }
@@ -536,7 +547,38 @@ function applyInlineLatexOnElement(el) {
   el.innerHTML = html;
 }
 
-// ── Block context menu ────────────────────────
+function applyInlineMarkdownOnElement(el) {
+  const patterns = [
+    { open: '**', close: '**', tag: 'strong' },
+    { open: '*', close: '*', tag: 'em' },
+    { open: '`', close: '`', tag: 'code' },
+    { open: '==', close: '==', tag: 'mark' },
+    { open: '~~', close: '~~', tag: 's' },
+  ];
+  
+  let html = el.innerHTML;
+  
+  // Apply bold first (longer pattern)
+  for (const { open, close, tag } of patterns) {
+    const escapedOpen = open.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const escapedClose = close.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const re = new RegExp(`${escapedOpen}([^${escapedClose[0]}]*?)${escapedClose}`, 'g');
+    html = html.replace(re, (match, inner) => {
+      if (match.includes(`<${tag}>`)) return match;
+      return `<${tag}>${inner}</${tag}>`;
+    });
+  }
+  
+  // Apply link pattern
+  const linkRegex = /\[([^\]]+)\]\(([^)]+)\)/g;
+  html = html.replace(linkRegex, (match, text, url) => {
+    if (match.includes('<a ')) return match;
+    const safeUrl = url.replace(/"/g, '&quot;');
+    return `<a href="${safeUrl}" target="_blank" rel="noopener noreferrer">${text}</a>`;
+  });
+  
+  el.innerHTML = html;
+}
 function showBlockCtxMenu(e, blockId) {
   showContextMenu(e, [
     {

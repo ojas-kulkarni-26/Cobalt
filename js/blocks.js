@@ -105,48 +105,77 @@ function buildBlockInner(block, callbacks) {
 }
 
 // ── Inline Markdown ───────────────────────────
-// Applies **bold**, *italic*, `code`, ==highlight==, ~~strike~~ on trigger chars
+// Applies **bold**, *italic*, `code`, ==highlight==, ~~strike~~, [link](url) on trigger chars
 const MD_PATTERNS = [
-  [/\*\*([^*\n<]+?)\*\*/g,   '<strong>$1</strong>'],
-  [/(?<!\*)\*([^*\n<]+?)\*(?!\*)/g, '<em>$1</em>'],
-  [/`([^`\n<]+?)`/g,          '<code>$1</code>'],
-  [/==([^=\n<]+?)==/g,        '<mark>$1</mark>'],
-  [/~~([^~\n<]+?)~~/g,        '<s>$1</s>'],
+  { open: '**', close: '**', el: 'strong', name: 'bold' },
+  { open: '*', close: '*', el: 'em', name: 'italic' },
+  { open: '`', close: '`', el: 'code', name: 'code' },
+  { open: '==', close: '==', el: 'mark', name: 'highlight' },
+  { open: '~~', close: '~~', el: 's', name: 'strikethrough' },
 ];
 
-const TRIGGER_CHARS = new Set(['*', '`', '=', '~', ' ', '$', '\\']);
+const TRIGGER_CHARS = new Set(['*', '`', '=', '~', ' ', '$', '\\', ')']);
 
-function applyInlineMarkdown(el) {
-  const sel = window.getSelection();
-  if (!sel?.rangeCount) return;
+function applyInlineMarkdown(el, specificPattern = null) {
+  const text = el.textContent;
+  if (!text) return false;
+  
+  const patterns = specificPattern ? [specificPattern] : MD_PATTERNS;
+  
+  for (const pattern of patterns) {
+    const { open, close, el: tag } = pattern;
+    if (open === close) {
+      // For patterns where open === close (like *, `, ==, ~~)
+      // Find the LAST complete pair that was just typed
+      const lastClose = text.lastIndexOf(close);
+      if (lastClose <= 0 || lastClose < open.length) continue;
+      
+      const lastOpen = text.lastIndexOf(open, lastClose - 1);
+      if (lastOpen === -1) continue;
+      
+      const content = text.substring(lastOpen + open.length, lastClose);
+      if (!content) continue;
+      
+      // Check if this pair is already wrapped
+      const html = el.innerHTML;
+      const escapedOpen = escapeRegex(open);
+      const escapedClose = escapeRegex(close);
+      const regex = new RegExp(`${escapedOpen}([^${escapeRegex(close[0])}]*?)${escapedClose}`, 'g');
+      
+      if (!regex.test(html)) continue;
+      
+      // Only replace if this pair is not already replaced
+      const newHtml = html.replace(regex, (match, inner, offset) => {
+        // Check if this match is at the position we expect
+        if (match.includes(`<${tag}>`)) return match; // Already wrapped
+        return `<${tag}>${inner}</${tag}>`;
+      });
+      
+      if (newHtml !== html) {
+        el.innerHTML = newHtml;
+        return true;
+      }
+    }
+  }
+  
+  // Handle [text](url) linking
+  const linkRegex = /\[([^\]]+)\]\(([^)]+)\)/g;
+  const linkHtml = el.innerHTML.replace(linkRegex, (match, text, url) => {
+    if (match.includes('<a ')) return match; // Already wrapped
+    const safeUrl = url.replace(/"/g, '&quot;');
+    return `<a href="${safeUrl}" target="_blank" rel="noopener noreferrer">${text}</a>`;
+  });
+  
+  if (linkHtml !== el.innerHTML) {
+    el.innerHTML = linkHtml;
+    return true;
+  }
+  
+  return false;
+}
 
-  // Measure how many chars are AFTER the cursor (so we can restore it)
-  const range = sel.getRangeAt(0);
-  const afterRange = document.createRange();
-  afterRange.selectNodeContents(el);
-  try { afterRange.setStart(range.endContainer, range.endOffset); }
-  catch { return; }
-  const charsFromEnd = afterRange.toString().length;
-
-  const oldHtml = el.innerHTML;
-  let html = oldHtml;
-  MD_PATTERNS.forEach(([re, repl]) => { html = html.replace(re, repl); });
-  if (html === oldHtml) return;
-
-  el.innerHTML = html;
-
-  // Restore cursor by walking to (totalLen - charsFromEnd)
-  const totalLen = el.textContent.length;
-  const target = Math.max(0, totalLen - charsFromEnd);
-  const pos = findTextNode(el, target);
-  if (!pos) return;
-  try {
-    const r = document.createRange();
-    r.setStart(pos.node, pos.offset);
-    r.collapse(true);
-    sel.removeAllRanges();
-    sel.addRange(r);
-  } catch {}
+function escapeRegex(string) {
+  return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
 function findTextNode(root, offset) {
@@ -676,6 +705,11 @@ function setupTextCallbacks(el, id, callbacks) {
       callbacks.onBlockChange(id, { text: el.innerHTML });
     }
 
+    // Process inline markdown on input
+    if (applyInlineMarkdown(el)) {
+      callbacks.onBlockChange(id, { text: el.innerHTML });
+    }
+
     // Slash command detection on empty element
     if (el.textContent === '/') {
       callbacks.onSlashCommand?.(id, el);
@@ -697,6 +731,15 @@ function setupInlineMarkdown(el, id, callbacks, onApply) {
         onApply?.();
       }
     }
+  });
+  
+  // Also trigger on paste event
+  el.addEventListener('paste', () => {
+    setTimeout(() => {
+      if (applyInlineMarkdown(el) || applyInlineLatex(el)) {
+        onApply?.();
+      }
+    }, 100);
   });
 }
 
